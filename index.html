@@ -35,6 +35,8 @@ background:rgba(255,255,255,.3);
 backdrop-filter:blur(5px);
 border-radius:10px;
 font-size:14px;
+z-index:10;
+position:relative;
 }
 
 #player{
@@ -43,6 +45,7 @@ position:absolute;
 border-radius:50%;
 box-shadow:0 0 15px cyan;
 touch-action: none;
+z-index:5;
 }
 
 .enemy, .health, .minus{
@@ -50,6 +53,7 @@ position:absolute;
 border-radius:50%;
 animation-name:fall;
 animation-timing-function:linear;
+z-index:5;
 }
 .enemy{width:50px;}
 .health, .minus{width:40px;}
@@ -75,6 +79,7 @@ background:#ff004c;
 color:white;
 font-size:16px;
 cursor:pointer;
+z-index:6;
 }
 
 #overlay{
@@ -87,6 +92,7 @@ justify-content:center;
 align-items:center;
 flex-direction:column;
 text-align:center;
+z-index:20;
 }
 
 #overlay h1, #overlay h2{
@@ -97,10 +103,10 @@ margin:5px 0;
 }
 
 #rulesScreen{
-position:absolute;
+position:fixed;
 width:90%;
 max-width:500px;
-background:rgba(255,255,255,0.9);
+background:rgba(255,255,255,0.95);
 border-radius:15px;
 padding:20px;
 top:50%;
@@ -108,6 +114,7 @@ left:50%;
 transform:translate(-50%,-50%);
 text-align:left;
 box-shadow:0 0 20px rgba(0,0,0,0.5);
+z-index:15;
 }
 #rulesScreen h2{
 text-align:center;
@@ -139,6 +146,7 @@ line-height:1.5;
 <p>৩. সাদ -১ পয়েন্ট</p>
 <p>৪. গ্রুপ ছবি গেম ওভার</p>
 <p style="margin-top:10px;font-style:italic;">Developer: Abdullah Fahim</p>
+<button onclick="hideRules()">I Understand / Start</button>
 </div>
 
 <div class="center" id="startScreen" style="display:none;">
@@ -151,7 +159,7 @@ line-height:1.5;
 <div id="overlay">
 <h1>💀 Game Over</h1>
 <h2>Score: <span id="finalScore"></span></h2>
-<button onclick="location.reload()">Restart</button>
+<button onclick="restartGame()">Restart</button>
 </div>
 
 <audio id="explodeSound" src="explode.mp3"></audio>
@@ -176,16 +184,10 @@ const bgMusic=document.getElementById("bgMusic");
 bgMusic.volume=0.3;
 const baseFallDuration=6;
 
-// --- Drag to position player for Start ---
+// --- Drag to move player ---
 let dragging=false;
-let rulesScreen=document.getElementById("rulesScreen");
-let startScreen=document.getElementById("startScreen");
-
 player.addEventListener("touchstart",(e)=>{dragging=true;});
-player.addEventListener("touchend",(e)=>{
-    dragging=false;
-    checkStartPosition();
-});
+player.addEventListener("touchend",(e)=>{dragging=false;});
 player.addEventListener("touchmove",(e)=>{
     if(!dragging) return;
     let touch=e.touches[0];
@@ -196,7 +198,7 @@ player.addEventListener("touchmove",(e)=>{
 
 // Mouse support
 player.addEventListener("mousedown",(e)=>{dragging=true;});
-player.addEventListener("mouseup",(e)=>{dragging=false;checkStartPosition();});
+player.addEventListener("mouseup",(e)=>{dragging=false;});
 player.addEventListener("mousemove",(e)=>{
     if(dragging){
         player.style.left=e.pageX - player.offsetWidth/2 + "px";
@@ -204,21 +206,20 @@ player.addEventListener("mousemove",(e)=>{
     }
 });
 
-// Check if player dragged over Start button to begin
-function checkStartPosition(){
-    let playerRect = player.getBoundingClientRect();
-    let buttonRect = document.querySelector("#startScreen button").getBoundingClientRect();
-    if(playerRect.bottom > buttonRect.top &&
-       playerRect.top < buttonRect.bottom &&
-       playerRect.right > buttonRect.left &&
-       playerRect.left < buttonRect.right){
-        // Hide rules and show start button
-        rulesScreen.style.display="none";
-        startScreen.style.display="block";
-    }
+// --- RULES CONTROL ---
+let rulesScreen=document.getElementById("rulesScreen");
+let startScreen=document.getElementById("startScreen");
+
+function hideRules(){
+    rulesScreen.style.display="none";
+    startScreen.style.display="block";
 }
 
-// --- Game functions ---
+function restartGame(){
+    location.reload(); // will automatically show rules again
+}
+
+// --- GAME FUNCTIONS ---
 function startGame(){
     startScreen.style.display="none";
     player.style.display="block";
@@ -236,7 +237,7 @@ function getSpeedMultiplier(){
     return 1;
 }
 
-// --- Enemy, Health, Minus --- (same logic as previous)
+// --- Enemy, Health, Minus ---
 function spawnEnemy(){
     if(!gameActive) return;
     if(Math.random()<0.6){
@@ -309,14 +310,8 @@ function spawnMinus(){
 }
 
 // Life functions
-function gainLife(){
-    if(lives<maxLives){ lives++; document.getElementById("lives").innerText=lives;
-        healthSound.currentTime=0; healthSound.play();
-    }
-}
-function loseLife(){ lives--; document.getElementById("lives").innerText=lives;
-explodeSound.play(); if(navigator.vibrate){navigator.vibrate(200);}
-if(lives<=0) endGame(); }
+function gainLife(){ if(lives<maxLives){ lives++; document.getElementById("lives").innerText=lives; healthSound.currentTime=0; healthSound.play(); } }
+function loseLife(){ lives--; document.getElementById("lives").innerText=lives; explodeSound.play(); if(navigator.vibrate){navigator.vibrate(200);} if(lives<=0) endGame(); }
 function minusHit(){ minusSound.play(); if(navigator.vibrate){navigator.vibrate(300);} endGame(); }
 
 // Collision
